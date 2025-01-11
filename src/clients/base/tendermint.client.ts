@@ -16,8 +16,8 @@ import {
 } from '@cosmjs/tendermint-rpc/build/tendermint37';
 import { sleep } from '@cosmjs/utils';
 
-import { BroadcastErrorObject } from '../../libs/errors.lib.js';
-import { BroadcastMode, BroadcastOptions } from '../../types.js';
+import { BroadcastErrorObject } from '../../common/errors.js';
+import { BroadcastMode, BroadcastOptions } from '../../common/index.js';
 
 export class WarpedTendermintClient {
   readonly baseClient: Tendermint37Client;

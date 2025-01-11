@@ -2,7 +2,7 @@ import { QueryClient, setupTxExtension } from '@cosmjs/stargate';
 import { Tendermint37Client } from '@cosmjs/tendermint-rpc';
 import Long from 'long';
 import protobuf from 'protobufjs';
-import { BROADCAST_POLL_INTERVAL_MS, BROADCAST_TIMEOUT_MS, } from '../types.js';
+import { BROADCAST_POLL_INTERVAL_MS, BROADCAST_TIMEOUT_MS, } from '../common/index.js';
 import { QueryExecutor } from './modules/query.executor.js';
 import { PostExecutor } from './modules/post.executor.js';
 import { WarpedTendermintClient } from './base/tendermint.client.js';
@@ -13,7 +13,7 @@ import { WarpedTendermintClient } from './base/tendermint.client.js';
 protobuf.util.Long = Long;
 protobuf.configure();
 export class ExecutorClient {
-    config;
+    network;
     _query;
     _post;
     /**
@@ -21,13 +21,13 @@ export class ExecutorClient {
      *
      * @returns The validator client
      */
-    static async connect(config) {
-        const client = new ExecutorClient(config);
+    static async connect(network) {
+        const client = new ExecutorClient(network);
         await client.initialize();
         return client;
     }
-    constructor(config) {
-        this.config = config;
+    constructor(network) {
+        this.network = network;
     }
     /**
      * @description Get the query module, used for retrieving on-chain data.
@@ -64,14 +64,14 @@ export class ExecutorClient {
         await this._post.populateAccountNumberCache(address);
     }
     async initialize() {
-        const tendermint37Client = await Tendermint37Client.connect(this.config.restEndpoint);
+        const tendermint37Client = await Tendermint37Client.connect(this.network.executor);
         const tendermintClient = new WarpedTendermintClient(tendermint37Client, {
             broadcastPollIntervalMs: BROADCAST_POLL_INTERVAL_MS,
             broadcastTimeoutMs: BROADCAST_TIMEOUT_MS,
         });
         const queryClient = QueryClient.withExtensions(tendermint37Client, setupTxExtension);
         this._query = new QueryExecutor(tendermintClient, queryClient);
-        this._post = new PostExecutor(this._query, this.config.chainId, this.config.denoms, this.config.defaultClientMemo, this.config.useTimestampNonce);
+        this._post = new PostExecutor(this._query, this.network);
     }
 }
 //# sourceMappingURL=executor.client.js.map

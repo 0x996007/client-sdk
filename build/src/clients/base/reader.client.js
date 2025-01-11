@@ -1,16 +1,11 @@
-import { DEFAULT_API_TIMEOUT } from '../../types.js';
+import { DEFAULT_API_TIMEOUT, getServerNetwork } from '../../common/index.js';
 import { generateQueryPath } from '../../utils/request.util.js';
 import { RequestMethod, request } from '../../axios/index.js';
 export default class ReaderBaseClient {
     host;
     apiTimeout;
-    constructor(host, apiTimeout) {
-        if (host.endsWith('/')) {
-            this.host = host.slice(0, -1);
-        }
-        else {
-            this.host = host;
-        }
+    constructor(network, apiTimeout) {
+        this.host = getServerNetwork(network).reader;
         this.apiTimeout = apiTimeout || DEFAULT_API_TIMEOUT;
     }
     async get(requestPath, params = {}) {

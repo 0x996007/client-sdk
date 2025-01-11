@@ -1,11 +1,8 @@
 import { EncodeObject, Registry } from '@cosmjs/proto-signing';
-import { OrderBatch } from '../../protos/protocol/clob/tx.js';
-import { PerpetualMarketType } from '../../protos/protocol/perpetuals/perpetual.js';
+import { Order_ConditionType, Order_Side, Order_TimeInForce, OrderBatch, PerpetualMarketType } from '../../protos/types.js';
 import { Coin } from 'cosmjs-types/cosmos/base/v1beta1/coin.js';
 import { Any } from 'cosmjs-types/google/protobuf/any.js';
 import Long from 'long';
-import { DenomConfig } from '../../types.js';
-import { Order_ConditionType, Order_Side, Order_TimeInForce } from '../../protos/protocol/clob/order.js';
 export declare class MsgBuilder {
     composeMsgPlaceOrder(address: string, subaccountNumber: number, clientId: number, clobPairId: number, orderFlags: number, goodTilBlock: number, goodTilBlockTime: number, side: Order_Side, quantums: Long, subticks: Long, timeInForce: Order_TimeInForce, reduceOnly: boolean, clientMetadata: number, conditionType?: Order_ConditionType, conditionalOrderTriggerSubticks?: Long): EncodeObject;
     composeMsgCancelOrder(address: string, subaccountNumber: number, clientId: number, clobPairId: number, orderFlags: number, goodTilBlock: number, goodTilBlockTime: number): EncodeObject;
@@ -19,7 +16,7 @@ export declare class MsgBuilder {
     composeMsgCreateOracleMarket(marketId: number, pair: string, exponent: number, minExchanges: number, minPriceChangePpm: number, exchangeConfigJson: string): EncodeObject;
     composeMsgCreatePerpetual(perpetualId: number, marketId: number, ticker: string, atomicResolution: number, liquidityTier: number, marketType: PerpetualMarketType): EncodeObject;
     composeMsgDelayMessage(embeddedMsg: EncodeObject, delayBlocks: number): EncodeObject;
-    composeMsgSubmitProposal(title: string, initialDepositAmount: string, initialDepositDenomConfig: DenomConfig, summary: string, messages: EncodeObject[], proposer: string, metadata?: string, expedited?: boolean): EncodeObject;
+    composeMsgSubmitProposal(title: string, initialDepositAmount: string, initialDepositDenomConfig: string, summary: string, messages: EncodeObject[], proposer: string, metadata?: string, expedited?: boolean): EncodeObject;
     composeMsgDepositToMegavault(address: string, subaccountNumber: number, quoteQuantums: Uint8Array): EncodeObject;
     composeMsgWithdrawFromMegavault(address: string, subaccountNumber: number, shares: Uint8Array, minQuoteQuantums: Uint8Array): EncodeObject;
     composeMsgDelegate(delegator: string, validator: string, amount: Coin): EncodeObject;

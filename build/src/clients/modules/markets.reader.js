@@ -1,4 +1,4 @@
-import { TimePeriod } from '../../types.js';
+import { TimePeriod } from '../../common/index.js';
 import ReaderBaseClient from '../base/reader.client.js';
 /**
  * @description REST endpoints for data unrelated to a particular address.

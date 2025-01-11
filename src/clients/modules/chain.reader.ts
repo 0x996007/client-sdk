@@ -3,7 +3,7 @@ import type {
   ComplianceResponse,
   HeightResponse,
   TimeResponse,
-} from '../../types.js';
+} from '../../common/index.js';
 
 export default class ChainReaderClient extends ReaderBaseClient {
   /**

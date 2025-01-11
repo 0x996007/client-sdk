@@ -1,8 +1,7 @@
-import { ClobPair_Status } from '../../protos/protocol/clob/clob_pair.js';
+import { Order_ConditionType, ClobPair_Status, } from '../../protos/types.js';
 import Long from 'long';
 import protobuf from 'protobufjs';
-import { GOV_MODULE_ADDRESS, DELAYMSG_MODULE_ADDRESS, TYPE_URL_MSG_SEND, TYPE_URL_MSG_SUBMIT_PROPOSAL, TYPE_URL_MSG_PLACE_ORDER, TYPE_URL_MSG_CANCEL_ORDER, TYPE_URL_MSG_CREATE_CLOB_PAIR, TYPE_URL_MSG_UPDATE_CLOB_PAIR, TYPE_URL_MSG_DELAY_MESSAGE, TYPE_URL_MSG_CREATE_PERPETUAL, TYPE_URL_MSG_CREATE_ORACLE_MARKET, TYPE_URL_MSG_CREATE_TRANSFER, TYPE_URL_MSG_WITHDRAW_FROM_SUBACCOUNT, TYPE_URL_MSG_DEPOSIT_TO_SUBACCOUNT, TYPE_URL_MSG_DELEGATE, TYPE_URL_MSG_UNDELEGATE, TYPE_URL_MSG_WITHDRAW_DELEGATOR_REWARD, TYPE_URL_BATCH_CANCEL, TYPE_URL_MSG_REGISTER_AFFILIATE, TYPE_URL_MSG_DEPOSIT_TO_MEGAVAULT, TYPE_URL_MSG_WITHDRAW_FROM_MEGAVAULT, TYPE_URL_MSG_CREATE_MARKET_PERMISSIONLESS, } from '../../types.js';
-import { Order_ConditionType, } from '../../protos/protocol/clob/order.js';
+import { AUTHORITY_ADDRESSES, TYPE_URL_MSG_SEND, TYPE_URL_MSG_SUBMIT_PROPOSAL, TYPE_URL_MSG_PLACE_ORDER, TYPE_URL_MSG_CANCEL_ORDER, TYPE_URL_MSG_CREATE_CLOB_PAIR, TYPE_URL_MSG_UPDATE_CLOB_PAIR, TYPE_URL_MSG_DELAY_MESSAGE, TYPE_URL_MSG_CREATE_PERPETUAL, TYPE_URL_MSG_CREATE_ORACLE_MARKET, TYPE_URL_MSG_CREATE_TRANSFER, TYPE_URL_MSG_WITHDRAW_FROM_SUBACCOUNT, TYPE_URL_MSG_DEPOSIT_TO_SUBACCOUNT, TYPE_URL_MSG_DELEGATE, TYPE_URL_MSG_UNDELEGATE, TYPE_URL_MSG_WITHDRAW_DELEGATOR_REWARD, TYPE_URL_BATCH_CANCEL, TYPE_URL_MSG_REGISTER_AFFILIATE, TYPE_URL_MSG_DEPOSIT_TO_MEGAVAULT, TYPE_URL_MSG_WITHDRAW_FROM_MEGAVAULT, TYPE_URL_MSG_CREATE_MARKET_PERMISSIONLESS, } from '../../common/index.js';
 protobuf.util.Long = Long;
 protobuf.configure();
 export class MsgBuilder {
@@ -80,7 +79,7 @@ export class MsgBuilder {
     composeMsgCreateClobPair(clobId, perpetualId, quantumConversionExponent, stepBaseQuantums, subticksPerTick) {
         const msg = {
             // uses x/gov module account since creating the clob pair is a governance action.
-            authority: GOV_MODULE_ADDRESS,
+            authority: AUTHORITY_ADDRESSES.gov,
             clobPair: {
                 id: clobId,
                 perpetualClobMetadata: {
@@ -100,7 +99,7 @@ export class MsgBuilder {
     composeMsgUpdateClobPair(clobId, perpetualId, quantumConversionExponent, stepBaseQuantums, subticksPerTick) {
         const msg = {
             // uses x/delaymsg module account since updating the clob pair is a delayedmsg action.
-            authority: DELAYMSG_MODULE_ADDRESS,
+            authority: AUTHORITY_ADDRESSES.delayMsg,
             clobPair: {
                 id: clobId,
                 perpetualClobMetadata: {
@@ -193,7 +192,7 @@ export class MsgBuilder {
     composeMsgCreateOracleMarket(marketId, pair, exponent, minExchanges, minPriceChangePpm, exchangeConfigJson) {
         const msg = {
             // uses x/gov module account since creating the oracle market is a governance action.
-            authority: GOV_MODULE_ADDRESS,
+            authority: AUTHORITY_ADDRESSES.gov,
             params: {
                 id: marketId,
                 pair,
@@ -212,7 +211,7 @@ export class MsgBuilder {
     composeMsgCreatePerpetual(perpetualId, marketId, ticker, atomicResolution, liquidityTier, marketType) {
         const msg = {
             // uses x/gov module account since creating the perpetual is a governance action.
-            authority: GOV_MODULE_ADDRESS,
+            authority: AUTHORITY_ADDRESSES.gov,
             params: {
                 id: perpetualId,
                 marketId,
@@ -232,7 +231,7 @@ export class MsgBuilder {
     composeMsgDelayMessage(embeddedMsg, delayBlocks) {
         const msg = {
             // all msgs sent to x/delay must be from x/gov module account.
-            authority: GOV_MODULE_ADDRESS,
+            authority: AUTHORITY_ADDRESSES.gov,
             msg: embeddedMsg,
             delayBlocks,
         };
@@ -246,7 +245,7 @@ export class MsgBuilder {
         const initialDeposit = [
             {
                 amount: initialDepositAmount,
-                denom: initialDepositDenomConfig.CHAINTOKEN_DENOM,
+                denom: initialDepositDenomConfig,
             },
         ];
         const msg = {

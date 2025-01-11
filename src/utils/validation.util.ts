@@ -1,15 +1,16 @@
 import { bech32 } from 'bech32';
 import Long from 'long';
 
-import { MAX_SUBACCOUNT_NUMBER, MAX_UINT_32 } from '../types.js';
 import {
   OrderFlags,
   ICancelOrder,
   IPlaceOrder,
   IBatchCancelOrder,
-} from '../types.js';
-import { UserError } from '../libs/errors.lib.js';
-import { Transfer } from '../protos/protocol/sending/transfer.js';
+  MAX_SUBACCOUNT_NUMBER,
+  MAX_UINT_32,
+} from '../common/index.js';
+import { UserError } from '../common/errors.js';
+import { Transfer } from '../protos/types.js';
 
 /**
  * @describe validatePlaceOrderMessage validates that an order to place has fields that would be

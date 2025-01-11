@@ -5,7 +5,7 @@ import {
   PositionStatus,
   TickerType,
   TradingRewardAggregationPeriod,
-} from '../../types.js';
+} from '../../common/index.js';
 import ReaderBaseClient from '../base/reader.client.js';
 
 /**

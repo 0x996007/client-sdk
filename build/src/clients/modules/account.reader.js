@@ -1,4 +1,4 @@
-import { TickerType, } from '../../types.js';
+import { TickerType, } from '../../common/index.js';
 import ReaderBaseClient from '../base/reader.client.js';
 /**
  * @description REST endpoints for data related to a particular address.

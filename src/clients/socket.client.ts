@@ -1,6 +1,5 @@
 import WebSocket, { ErrorEvent, MessageEvent } from 'ws';
-
-import { IndexerConfig } from '../types.js';
+import { getServerNetwork } from '../common/constants.js';
 
 enum OutgoingMessageTypes {
   SUBSCRIBE = 'subscribe',
@@ -44,13 +43,13 @@ export class SocketClient {
   //   private lastMessageTime: number = Date.now();
 
   constructor(
-    config: IndexerConfig,
+    network: string,
     onOpenCallback: () => void,
     onCloseCallback: () => void,
     onMessageCallback: (event: MessageEvent) => void,
     onErrorCallback: (event: ErrorEvent) => void,
   ) {
-    this.url = config.websocketEndpoint;
+    this.url = getServerNetwork(network).socket;
     this.onOpenCallback = onOpenCallback;
     this.onCloseCallback = onCloseCallback;
     this.onMessageCallback = onMessageCallback;

@@ -1,4 +1,4 @@
-import { MAX_UINT_32 } from '../types.js';
+import { MAX_UINT_32 } from '../common/index.js';
 
 /**
  * Returns a random integer value between 0 and (n-1).

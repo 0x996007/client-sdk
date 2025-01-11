@@ -1,4 +1,4 @@
-import { MAX_SUBACCOUNT_NUMBER } from '../../types.js';
+import { MAX_SUBACCOUNT_NUMBER } from '../../common/index.js';
 export class SubaccountInfo {
     wallet;
     // TODO, change address to Wallet object when implementing validator functions

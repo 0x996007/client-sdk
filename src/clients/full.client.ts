@@ -10,12 +10,10 @@ import { parseUnits } from 'ethers';
 import Long from 'long';
 import protobuf from 'protobufjs';
 
-import { bigIntToBytes } from '../libs/transform.lib.js';
+import { bigIntToBytes } from '../utils/transform.util.js';
 import { isStatefulOrder, verifyOrderFlags } from '../utils/validation.util.js';
 import {
-  GovAddNewMarketParams,
   OrderFlags,
-  Network,
   OrderExecution,
   OrderSide,
   OrderTimeInForce,
@@ -24,7 +22,11 @@ import {
   SHORT_BLOCK_WINDOW,
   SelectedGasDenom,
   BroadcastMode,
-} from '../types.js';
+  ServerNetwork,
+  getServerNetwork,
+  DenomToken,
+  GovAddNewMarketParams,
+} from '../common/index.js';
 import {
   calculateQuantums,
   calculateSubticks,
@@ -35,18 +37,18 @@ import {
   calculateConditionType,
   calculateConditionalOrderTriggerSubticks,
   calculateVaultQuantums,
-} from '../utils/chain.util.js';
+} from '../utils/order.util.js';
 import { ReaderClient } from './reader.client.js';
-import { UserError } from '../libs/errors.lib.js';
-import { generateRegistry } from '../libs/registry.lib.js';
-import { LocalWallet } from './base/local.wallet.js';
+import { UserError } from '../common/errors.js';
+import { generateRegistry } from '../utils/registry.util.js';
+import { ClientWallet } from './base/client.wallet.js';
 import { SubaccountInfo } from './base/sub-account.info.js';
 import { ExecutorClient } from './executor.client.js';
 import {
   Order_ConditionType,
   Order_TimeInForce,
-} from '../protos/protocol/clob/order.js';
-import { OrderBatch } from '../protos/protocol/clob/tx.js';
+  OrderBatch,
+} from '../protos/types.js';
 
 // Required for encoding and decoding queries that are of type Long.
 // Must be done once but since the individal modules should be usable
@@ -70,26 +72,24 @@ export interface OrderBatchWithMarketId {
 }
 
 export class FullClient {
-  public readonly network: Network;
+  public readonly network: ServerNetwork;
   public gasDenom: SelectedGasDenom = SelectedGasDenom.USDC;
   private _readerClient: ReaderClient;
   private _executorClient?: ExecutorClient;
 
-  static async connect(network: Network): Promise<FullClient> {
+  static async connect(network: string): Promise<FullClient> {
     const client = new FullClient(network);
     await client.initialize();
     return client;
   }
 
-  private constructor(network: Network, apiTimeout?: number) {
-    this.network = network;
-    this._readerClient = new ReaderClient(network.indexerConfig, apiTimeout);
+  private constructor(network: string, apiTimeout?: number) {
+    this.network = getServerNetwork(network);
+    this._readerClient = new ReaderClient(network, apiTimeout);
   }
 
   private async initialize(): Promise<void> {
-    this._executorClient = await ExecutorClient.connect(
-      this.network.validatorConfig,
-    );
+    this._executorClient = await ExecutorClient.connect(this.network);
   }
 
   get readerClient(): ReaderClient {
@@ -109,6 +109,11 @@ export class FullClient {
   get selectedGasDenom(): SelectedGasDenom | undefined {
     if (!this._executorClient) return undefined;
     return this._executorClient.selectedGasDenom;
+  }
+
+  getGasDenomToken(denom: SelectedGasDenom): DenomToken | undefined {
+    if (!this._executorClient) return undefined;
+    return this._executorClient.post.getGasDenomToken(denom);
   }
 
   setSelectedGasDenom(gasDenom: SelectedGasDenom): void {
@@ -132,7 +137,7 @@ export class FullClient {
    * @returns The Signature.
    */
   async sign(
-    wallet: LocalWallet,
+    wallet: ClientWallet,
     messaging: () => Promise<EncodeObject[]>,
     zeroFee: boolean,
     gasPrice?: GasPrice,
@@ -158,7 +163,7 @@ export class FullClient {
    * @returns The Transaction Hash.
    */
   async send(
-    wallet: LocalWallet,
+    wallet: ClientWallet,
     messaging: () => Promise<EncodeObject[]>,
     zeroFee: boolean,
     gasPrice?: GasPrice,
@@ -206,7 +211,7 @@ export class FullClient {
    * @returns The gas estimate.
    */
   async simulate(
-    wallet: LocalWallet,
+    wallet: ClientWallet,
     messaging: () => Promise<EncodeObject[]>,
     gasPrice?: GasPrice,
     memo?: string,
@@ -890,7 +895,7 @@ export class FullClient {
     }
     const quantums = parseUnits(
       amount,
-      executorClient.config.denoms.USDC_DECIMALS,
+      this.getGasDenomToken(SelectedGasDenom.USDC).decimals,
     );
     if (quantums > BigInt(Long.MAX_VALUE.toString())) {
       throw new Error('amount to large');
@@ -957,7 +962,7 @@ export class FullClient {
     }
     const quantums = parseUnits(
       amount,
-      executorClient.config.denoms.USDC_DECIMALS,
+      this.getGasDenomToken(SelectedGasDenom.USDC).decimals,
     );
     if (quantums > BigInt(Long.MAX_VALUE.toString())) {
       throw new Error('amount to large');
@@ -1025,7 +1030,7 @@ export class FullClient {
     }
     const quantums = parseUnits(
       amount,
-      executorClient.config.denoms.USDC_DECIMALS,
+      this.getGasDenomToken(SelectedGasDenom.USDC).decimals,
     );
     if (quantums > BigInt(Long.MAX_VALUE.toString())) {
       throw new Error('amount to large');
@@ -1056,7 +1061,7 @@ export class FullClient {
    * @returns The message
    */
   sendTokenMessage(
-    wallet: LocalWallet,
+    wallet: ClientWallet,
     amount: string,
     recipient: string,
   ): EncodeObject {
@@ -1066,21 +1071,17 @@ export class FullClient {
         'wallet address is not set. Call connectWallet() first',
       );
     }
-    const {
-      CHAINTOKEN_DENOM: chainTokenDenom,
-      CHAINTOKEN_DECIMALS: chainTokenDecimals,
-    } = this._executorClient?.config.denoms || {};
-
-    if (chainTokenDenom === undefined || chainTokenDecimals === undefined) {
+    const token = this.getGasDenomToken(SelectedGasDenom.NATIVE);
+    if (!token) {
       throw new Error('Chain token denom not set in validator config');
     }
 
-    const quantums = parseUnits(amount, chainTokenDecimals);
+    const quantums = parseUnits(amount, token.decimals);
 
     return this.executorClient.post.composer.composeMsgSendToken(
       address,
       recipient,
-      chainTokenDenom,
+      token.denom,
       quantums.toString(),
     );
   }
@@ -1216,7 +1217,7 @@ export class FullClient {
    * @returns the transaction hash.
    */
   async submitGovAddNewMarketProposal(
-    wallet: LocalWallet,
+    wallet: ClientWallet,
     params: GovAddNewMarketParams,
     title: string,
     summary: string,
@@ -1289,7 +1290,7 @@ export class FullClient {
       const submitProposal = composer.composeMsgSubmitProposal(
         title,
         initialDepositAmount,
-        this.executorClient.config.denoms, // use the client denom.
+        SelectedGasDenom.NATIVE, // use the client denom.
         summary,
         // IMPORTANT: must wrap messages in Any type for gov's submit proposal.
         composer.wrapMessageArrAsAny(registry, msgs),

@@ -2,8 +2,8 @@ import { Coin } from '@cosmjs/proto-signing';
 import { Account, Block, QueryClient as StargateQueryClient, TxExtension } from '@cosmjs/stargate';
 import Long from 'long';
 import { WarpedTendermintClient } from '../base/tendermint.client.js';
-import { AffiliateModule, BridgeModule, ClobModule, DistributionModule, FeeTierModule, GovV1Module, PerpetualsModule, PricesModule, RateLimitModule, RewardsModule, StakingModule, SubaccountsModule, VaultModule } from '../../protos/modules.js';
-import { ProposalStatus } from '../../protos/cosmos/gov/v1/gov.js';
+import { AffiliateModule, BridgeModule, ClobModule, DistributionModule, FeeTierModule, GovV1Module, PerpetualsModule, PricesModule, RateLimitModule, RewardsModule, StakingModule, SubaccountsModule, VaultModule } from '../../protos/queries.js';
+import { ProposalStatus } from '../../protos/types.js';
 export declare class QueryExecutor {
     readonly tendermintClient: WarpedTendermintClient;
     readonly stargateQueryClient: StargateQueryClient & TxExtension;

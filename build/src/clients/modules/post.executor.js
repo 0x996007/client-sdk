@@ -3,11 +3,11 @@ import { calculateFee, GasPrice, } from '@cosmjs/stargate';
 import { Method } from '@cosmjs/tendermint-rpc';
 import Long from 'long';
 import protobuf from 'protobufjs';
-import { GAS_MULTIPLIER, SelectedGasDenom, OrderFlags, } from '../../types.js';
-import { UnexpectedClientError } from '../../libs/errors.lib.js';
-import { generateRegistry } from '../../libs/registry.lib.js';
+import { GAS_MULTIPLIER, SelectedGasDenom, OrderFlags, DefaultDenomGasPrice, } from '../../common/index.js';
+import { UnexpectedClientError } from '../../common/errors.js';
+import { generateRegistry } from '../../utils/registry.util.js';
 import { MsgBuilder } from '../base/msg.builder.js';
-import { Order_ConditionType, } from '../../protos/protocol/clob/order.js';
+import { Order_ConditionType, } from '../../protos/types.js';
 // Required for encoding and decoding queries that are of type Long.
 // Must be done once but since the individal modules should be usable
 // - must be set in each module that encounters encoding/decoding Longs.
@@ -18,27 +18,23 @@ export class PostExecutor {
     composer;
     registry;
     chainId;
+    network;
     get;
-    denoms;
     defaultClientMemo;
-    selectedGasDenom = SelectedGasDenom.USDC;
-    defaultGasPrice;
-    defaultDydxGasPrice;
+    selectedGasDenom = SelectedGasDenom.NATIVE;
     useTimestampNonce = false;
     accountNumberCache = new Map();
-    constructor(get, chainId, denoms, defaultClientMemo, useTimestampNonce) {
-        this.get = get;
-        this.chainId = chainId;
+    constructor(query, network) {
+        this.network = network;
+        this.get = query;
+        this.chainId = network.id;
         this.registry = generateRegistry();
         this.composer = new MsgBuilder();
-        this.denoms = denoms;
-        this.defaultClientMemo = defaultClientMemo;
-        this.defaultGasPrice = GasPrice.fromString(`0.025${denoms.USDC_GAS_DENOM !== undefined ? denoms.USDC_GAS_DENOM : denoms.USDC_DENOM}`);
-        this.defaultDydxGasPrice = GasPrice.fromString(`25000000000${denoms.CHAINTOKEN_GAS_DENOM !== undefined
-            ? denoms.CHAINTOKEN_GAS_DENOM
-            : denoms.CHAINTOKEN_DENOM}`);
-        if (useTimestampNonce === true)
-            this.useTimestampNonce = useTimestampNonce;
+        this.defaultClientMemo = network.defaultClientMemo;
+        this.useTimestampNonce = network.useTimestampNonce || false;
+    }
+    getGasDenomToken(denom = this.selectedGasDenom) {
+        return this.network.gasDenomConfig[denom];
     }
     /**
      * @description Retrieves the account number for the given wallet address and populates the accountNumberCache.
@@ -51,13 +47,12 @@ export class PostExecutor {
         const account = await this.get.getAccount(address);
         this.accountNumberCache.set(address, account);
     }
-    setSelectedGasDenom(selectedGasDenom) {
-        this.selectedGasDenom = selectedGasDenom;
+    setSelectedGasDenom(denom) {
+        this.selectedGasDenom = denom;
     }
-    getGasPrice() {
-        return this.selectedGasDenom === SelectedGasDenom.USDC
-            ? this.defaultGasPrice
-            : this.defaultDydxGasPrice;
+    getGasPrice(denom = this.selectedGasDenom) {
+        const d = this.getGasDenomToken(denom);
+        return GasPrice.fromString(`${DefaultDenomGasPrice[d.denom]}${d.symbol}`);
     }
     /**
      * @description Simulate a transaction
@@ -221,10 +216,10 @@ export class PostExecutor {
         // represented in 'uusdc', and the output of `calculateFee` is in '', which is replaced
         // below by USDC_DENOM string.
         const amount = fee.amount.map((coin) => {
-            if (coin.denom === 'uusdc') {
+            if (coin.denom === SelectedGasDenom.USDC) {
                 return {
                     amount: coin.amount,
-                    denom: this.denoms.USDC_DENOM,
+                    denom: SelectedGasDenom.USDC,
                 };
             }
             return coin;
@@ -305,13 +300,10 @@ export class PostExecutor {
     }
     async sendToken(subaccount, recipient, coinDenom, quantums, zeroFee = true, broadcastMode) {
         const msg = await this.sendTokenMsg(subaccount.address, recipient, coinDenom, quantums);
-        return this.send(subaccount.wallet, () => Promise.resolve([msg]), zeroFee, coinDenom === this.denoms.CHAINTOKEN_DENOM
-            ? this.defaultDydxGasPrice
-            : this.defaultGasPrice, undefined, broadcastMode);
+        return this.send(subaccount.wallet, () => Promise.resolve([msg]), zeroFee, this.getGasPrice(coinDenom), undefined, broadcastMode);
     }
     async sendTokenMsg(address, recipient, coinDenom, quantums) {
-        if (coinDenom !== this.denoms.CHAINTOKEN_DENOM &&
-            coinDenom !== this.denoms.USDC_DENOM) {
+        if (!Object.keys(this.network.gasDenomConfig).includes(coinDenom)) {
             throw new Error('Unsupported coinDenom');
         }
         return new Promise((resolve) => {
@@ -321,33 +313,33 @@ export class PostExecutor {
     }
     async delegate(subaccount, delegator, validator, amount, broadcastMode) {
         const msg = this.composer.composeMsgDelegate(delegator, validator, {
-            denom: this.denoms.CHAINTOKEN_DENOM,
+            denom: SelectedGasDenom.NATIVE,
             amount,
         });
-        return this.send(subaccount.wallet, () => Promise.resolve([msg]), false, this.defaultDydxGasPrice, undefined, broadcastMode);
+        return this.send(subaccount.wallet, () => Promise.resolve([msg]), false, this.getGasPrice(SelectedGasDenom.NATIVE), undefined, broadcastMode);
     }
     delegateMsg(delegator, validator, amount) {
         return this.composer.composeMsgDelegate(delegator, validator, {
-            denom: this.denoms.CHAINTOKEN_DENOM,
+            denom: SelectedGasDenom.NATIVE,
             amount,
         });
     }
     async undelegate(subaccount, delegator, validator, amount, broadcastMode) {
         const msg = this.composer.composeMsgUndelegate(delegator, validator, {
-            denom: this.denoms.CHAINTOKEN_DENOM,
+            denom: SelectedGasDenom.NATIVE,
             amount,
         });
-        return this.send(subaccount.wallet, () => Promise.resolve([msg]), false, this.defaultDydxGasPrice, undefined, broadcastMode);
+        return this.send(subaccount.wallet, () => Promise.resolve([msg]), false, this.getGasPrice(SelectedGasDenom.NATIVE), undefined, broadcastMode);
     }
     undelegateMsg(delegator, validator, amount) {
         return this.composer.composeMsgUndelegate(delegator, validator, {
-            denom: this.denoms.CHAINTOKEN_DENOM,
+            denom: SelectedGasDenom.NATIVE,
             amount,
         });
     }
     async withdrawDelegatorReward(subaccount, delegator, validator, broadcastMode) {
         const msg = this.composer.composeMsgWithdrawDelegatorReward(delegator, validator);
-        return this.send(subaccount.wallet, () => Promise.resolve([msg]), false, this.defaultGasPrice, undefined, broadcastMode);
+        return this.send(subaccount.wallet, () => Promise.resolve([msg]), false, this.getGasPrice(SelectedGasDenom.NATIVE), undefined, broadcastMode);
     }
     withdrawDelegatorRewardMsg(delegator, validator) {
         return this.composer.composeMsgWithdrawDelegatorReward(delegator, validator);

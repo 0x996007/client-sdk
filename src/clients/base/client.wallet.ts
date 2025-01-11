@@ -9,23 +9,23 @@ import { SigningStargateClient } from '@cosmjs/stargate';
 import Long from 'long';
 import protobuf from 'protobufjs';
 
-import { generateRegistry } from '../../libs/registry.lib.js';
-import { TransactionOptions } from '../../types.js';
+import { generateRegistry } from '../../utils/registry.util.js';
+import { TransactionOptions } from '../../common/index.js';
 import { TransactionSigner } from './transaction.signer.js';
 
 // Required for encoding and decoding queries that are of type Long.
 protobuf.util.Long = Long;
 protobuf.configure();
 
-export class LocalWallet {
+export class ClientWallet {
   accounts?: AccountData[];
   address?: string;
   pubKey?: Secp256k1Pubkey;
   signer?: TransactionSigner;
   offlineSigner?: OfflineSigner;
 
-  static async fromOfflineSigner(signer: OfflineSigner): Promise<LocalWallet> {
-    const wallet = new LocalWallet();
+  static async fromOfflineSigner(signer: OfflineSigner): Promise<ClientWallet> {
+    const wallet = new ClientWallet();
     await wallet.setSigner(signer);
     return wallet;
   }
@@ -33,8 +33,8 @@ export class LocalWallet {
   static async fromMnemonic(
     mnemonic: string,
     prefix?: string,
-  ): Promise<LocalWallet> {
-    const wallet = new LocalWallet();
+  ): Promise<ClientWallet> {
+    const wallet = new ClientWallet();
     await wallet.setMnemonic(mnemonic, prefix);
     return wallet;
   }

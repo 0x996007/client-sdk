@@ -13,9 +13,9 @@ import { Any } from 'cosmjs-types/google/protobuf/any.js';
 import Long from 'long';
 import protobuf from 'protobufjs';
 
-import { bigIntToBytes } from '../../libs/transform.lib.js';
-import { PAGE_REQUEST } from '../../types.js';
-import { UnexpectedClientError } from '../../libs/errors.lib.js';
+import { bigIntToBytes } from '../../utils/transform.util.js';
+import { PAGE_REQUEST } from '../../common/constants.js';
+import { UnexpectedClientError } from '../../common/errors.js';
 import { WarpedTendermintClient } from '../base/tendermint.client.js';
 import {
   AffiliateModule,
@@ -32,8 +32,8 @@ import {
   StatsModule,
   SubaccountsModule,
   VaultModule,
-} from '../../protos/modules.js';
-import { ProposalStatus } from '../../protos/cosmos/gov/v1/gov.js';
+} from '../../protos/queries.js';
+import { ProposalStatus } from '../../protos/types.js';
 
 // Required for encoding and decoding queries that are of type Long.
 // Must be done once but since the individal modules should be usable without

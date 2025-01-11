@@ -1,4 +1,5 @@
 import WebSocket from 'ws';
+import { getServerNetwork } from '../common/constants.js';
 var OutgoingMessageTypes;
 (function (OutgoingMessageTypes) {
     OutgoingMessageTypes["SUBSCRIBE"] = "subscribe";
@@ -39,8 +40,8 @@ export class SocketClient {
     onMessageCallback;
     onErrorCallback;
     //   private lastMessageTime: number = Date.now();
-    constructor(config, onOpenCallback, onCloseCallback, onMessageCallback, onErrorCallback) {
-        this.url = config.websocketEndpoint;
+    constructor(network, onOpenCallback, onCloseCallback, onMessageCallback, onErrorCallback) {
+        this.url = getServerNetwork(network).socket;
         this.onOpenCallback = onOpenCallback;
         this.onCloseCallback = onCloseCallback;
         this.onMessageCallback = onMessageCallback;

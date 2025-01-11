@@ -1,7 +1,7 @@
-import { LocalWallet } from './local.wallet.js';
+import { ClientWallet } from './client.wallet.js';
 export declare class SubaccountInfo {
-    readonly wallet: LocalWallet;
+    readonly wallet: ClientWallet;
     readonly subaccountNumber: number;
-    constructor(wallet: LocalWallet, subaccountNumber?: number);
+    constructor(wallet: ClientWallet, subaccountNumber?: number);
     get address(): string;
 }

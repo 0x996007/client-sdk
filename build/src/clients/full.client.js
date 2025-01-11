@@ -2,15 +2,15 @@ import { Method } from '@cosmjs/tendermint-rpc';
 import { parseUnits } from 'ethers';
 import Long from 'long';
 import protobuf from 'protobufjs';
-import { bigIntToBytes } from '../libs/transform.lib.js';
+import { bigIntToBytes } from '../utils/transform.util.js';
 import { isStatefulOrder, verifyOrderFlags } from '../utils/validation.util.js';
-import { OrderFlags, SHORT_BLOCK_FORWARD, SHORT_BLOCK_WINDOW, SelectedGasDenom, } from '../types.js';
-import { calculateQuantums, calculateSubticks, calculateSide, calculateTimeInForce, calculateOrderFlags, calculateClientMetadata, calculateConditionType, calculateConditionalOrderTriggerSubticks, calculateVaultQuantums, } from '../utils/chain.util.js';
+import { OrderFlags, SHORT_BLOCK_FORWARD, SHORT_BLOCK_WINDOW, SelectedGasDenom, getServerNetwork, } from '../common/index.js';
+import { calculateQuantums, calculateSubticks, calculateSide, calculateTimeInForce, calculateOrderFlags, calculateClientMetadata, calculateConditionType, calculateConditionalOrderTriggerSubticks, calculateVaultQuantums, } from '../utils/order.util.js';
 import { ReaderClient } from './reader.client.js';
-import { UserError } from '../libs/errors.lib.js';
-import { generateRegistry } from '../libs/registry.lib.js';
+import { UserError } from '../common/errors.js';
+import { generateRegistry } from '../utils/registry.util.js';
 import { ExecutorClient } from './executor.client.js';
-import { Order_ConditionType, } from '../protos/protocol/clob/order.js';
+import { Order_ConditionType, } from '../protos/types.js';
 // Required for encoding and decoding queries that are of type Long.
 // Must be done once but since the individal modules should be usable
 // - must be set in each module that encounters encoding/decoding Longs.
@@ -28,11 +28,11 @@ export class FullClient {
         return client;
     }
     constructor(network, apiTimeout) {
-        this.network = network;
-        this._readerClient = new ReaderClient(network.indexerConfig, apiTimeout);
+        this.network = getServerNetwork(network);
+        this._readerClient = new ReaderClient(network, apiTimeout);
     }
     async initialize() {
-        this._executorClient = await ExecutorClient.connect(this.network.validatorConfig);
+        this._executorClient = await ExecutorClient.connect(this.network);
     }
     get readerClient() {
         /**
@@ -50,6 +50,11 @@ export class FullClient {
         if (!this._executorClient)
             return undefined;
         return this._executorClient.selectedGasDenom;
+    }
+    getGasDenomToken(denom) {
+        if (!this._executorClient)
+            return undefined;
+        return this._executorClient.post.getGasDenomToken(denom);
     }
     setSelectedGasDenom(gasDenom) {
         if (!this._executorClient)
@@ -491,7 +496,7 @@ export class FullClient {
         if (executorClient === undefined) {
             throw new Error('executorClient not set');
         }
-        const quantums = parseUnits(amount, executorClient.config.denoms.USDC_DECIMALS);
+        const quantums = parseUnits(amount, this.getGasDenomToken(SelectedGasDenom.USDC).decimals);
         if (quantums > BigInt(Long.MAX_VALUE.toString())) {
             throw new Error('amount to large');
         }
@@ -532,7 +537,7 @@ export class FullClient {
         if (executorClient === undefined) {
             throw new Error('executorClient not set');
         }
-        const quantums = parseUnits(amount, executorClient.config.denoms.USDC_DECIMALS);
+        const quantums = parseUnits(amount, this.getGasDenomToken(SelectedGasDenom.USDC).decimals);
         if (quantums > BigInt(Long.MAX_VALUE.toString())) {
             throw new Error('amount to large');
         }
@@ -576,7 +581,7 @@ export class FullClient {
         if (executorClient === undefined) {
             throw new Error('executorClient not set');
         }
-        const quantums = parseUnits(amount, executorClient.config.denoms.USDC_DECIMALS);
+        const quantums = parseUnits(amount, this.getGasDenomToken(SelectedGasDenom.USDC).decimals);
         if (quantums > BigInt(Long.MAX_VALUE.toString())) {
             throw new Error('amount to large');
         }
@@ -602,12 +607,12 @@ export class FullClient {
         if (address === undefined) {
             throw new UserError('wallet address is not set. Call connectWallet() first');
         }
-        const { CHAINTOKEN_DENOM: chainTokenDenom, CHAINTOKEN_DECIMALS: chainTokenDecimals, } = this._executorClient?.config.denoms || {};
-        if (chainTokenDenom === undefined || chainTokenDecimals === undefined) {
+        const token = this.getGasDenomToken(SelectedGasDenom.NATIVE);
+        if (!token) {
             throw new Error('Chain token denom not set in validator config');
         }
-        const quantums = parseUnits(amount, chainTokenDecimals);
-        return this.executorClient.post.composer.composeMsgSendToken(address, recipient, chainTokenDenom, quantums.toString());
+        const quantums = parseUnits(amount, token.decimals);
+        return this.executorClient.post.composer.composeMsgSendToken(address, recipient, token.denom, quantums.toString());
     }
     async signPlaceOrder(subaccount, marketId, type, side, price, 
     // trigger_price: number,   // not used for MARKET and LIMIT
@@ -683,7 +688,7 @@ export class FullClient {
             msgs.push(createClobPair);
             msgs.push(delayMessage);
             // x/gov.v1.MsgSubmitProposal
-            const submitProposal = composer.composeMsgSubmitProposal(title, initialDepositAmount, this.executorClient.config.denoms, // use the client denom.
+            const submitProposal = composer.composeMsgSubmitProposal(title, initialDepositAmount, SelectedGasDenom.NATIVE, // use the client denom.
             summary, 
             // IMPORTANT: must wrap messages in Any type for gov's submit proposal.
             composer.wrapMessageArrAsAny(registry, msgs), wallet.address, // proposer

@@ -244,7 +244,7 @@ export declare class ValidatorConfig {
     broadcastOptions?: BroadcastOptions;
     defaultClientMemo?: string;
     useTimestampNonce?: boolean;
-    constructor(restEndpoint: string, chainId: string, denoms: DenomConfig, broadcastOptions?: BroadcastOptions, defaultClientMemo?: string, useTimestampNonce?: boolean);
+    constructor(network: string, chainId: string, denoms: DenomConfig, broadcastOptions?: BroadcastOptions, defaultClientMemo?: string, useTimestampNonce?: boolean);
 }
 export declare class Network {
     env: string;

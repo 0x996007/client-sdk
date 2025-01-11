@@ -2,31 +2,6 @@ import { toHex } from '@cosmjs/encoding';
 import { BigNumber } from 'bignumber.js';
 import Long from 'long';
 
-import {
-  PartialTransactionOptions,
-  TransactionOptions,
-  DEFAULT_SEQUENCE,
-} from '../types.js';
-
-/**
- * @description Either return undefined or insert default sequence value into
- * `partialTransactionOptions` if it does not exist.
- *
- * @returns undefined or full TransactionOptions.
- */
-export function convertPartialTransactionOptionsToFull(
-  partialTransactionOptions?: PartialTransactionOptions,
-): TransactionOptions | undefined {
-  if (partialTransactionOptions === undefined) {
-    return undefined;
-  }
-
-  return {
-    sequence: DEFAULT_SEQUENCE,
-    ...partialTransactionOptions,
-  };
-}
-
 /**
  * @description Strip '0x' prefix from input string. If there is no '0x' prefix, return the original
  * input.

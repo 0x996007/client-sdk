@@ -4,11 +4,11 @@ import Long from 'long';
 import protobuf from 'protobufjs';
 
 import {
-  ValidatorConfig,
   BROADCAST_POLL_INTERVAL_MS,
   BROADCAST_TIMEOUT_MS,
   SelectedGasDenom,
-} from '../types.js';
+  ServerNetwork,
+} from '../common/index.js';
 import { QueryExecutor } from './modules/query.executor.js';
 import { PostExecutor } from './modules/post.executor.js';
 import { WarpedTendermintClient } from './base/tendermint.client.js';
@@ -21,7 +21,7 @@ protobuf.util.Long = Long;
 protobuf.configure();
 
 export class ExecutorClient {
-  public readonly config: ValidatorConfig;
+  public readonly network: ServerNetwork;
   private _query?: QueryExecutor;
   private _post?: PostExecutor;
 
@@ -30,14 +30,14 @@ export class ExecutorClient {
    *
    * @returns The validator client
    */
-  static async connect(config: ValidatorConfig): Promise<ExecutorClient> {
-    const client = new ExecutorClient(config);
+  static async connect(network: ServerNetwork): Promise<ExecutorClient> {
+    const client = new ExecutorClient(network);
     await client.initialize();
     return client;
   }
 
-  private constructor(config: ValidatorConfig) {
-    this.config = config;
+  private constructor(network: ServerNetwork) {
+    this.network = network;
   }
 
   /**
@@ -79,7 +79,7 @@ export class ExecutorClient {
 
   private async initialize(): Promise<void> {
     const tendermint37Client: Tendermint37Client =
-      await Tendermint37Client.connect(this.config.restEndpoint);
+      await Tendermint37Client.connect(this.network.executor);
 
     const tendermintClient = new WarpedTendermintClient(tendermint37Client, {
       broadcastPollIntervalMs: BROADCAST_POLL_INTERVAL_MS,
@@ -90,12 +90,6 @@ export class ExecutorClient {
       setupTxExtension,
     );
     this._query = new QueryExecutor(tendermintClient, queryClient);
-    this._post = new PostExecutor(
-      this._query!,
-      this.config.chainId,
-      this.config.denoms,
-      this.config.defaultClientMemo,
-      this.config.useTimestampNonce,
-    );
+    this._post = new PostExecutor(this._query, this.network);
   }
 }

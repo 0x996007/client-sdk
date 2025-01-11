@@ -1,8 +1,8 @@
-import { ValidatorConfig, SelectedGasDenom } from '../types.js';
+import { SelectedGasDenom, ServerNetwork } from '../common/index.js';
 import { QueryExecutor } from './modules/query.executor.js';
 import { PostExecutor } from './modules/post.executor.js';
 export declare class ExecutorClient {
-    readonly config: ValidatorConfig;
+    readonly network: ServerNetwork;
     private _query?;
     private _post?;
     /**
@@ -10,7 +10,7 @@ export declare class ExecutorClient {
      *
      * @returns The validator client
      */
-    static connect(config: ValidatorConfig): Promise<ExecutorClient>;
+    static connect(network: ServerNetwork): Promise<ExecutorClient>;
     private constructor();
     /**
      * @description Get the query module, used for retrieving on-chain data.

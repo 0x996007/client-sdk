@@ -2,8 +2,8 @@ import { HDKey } from '@scure/bip32';
 import { entropyToMnemonic, mnemonicToSeedSync } from '@scure/bip39';
 import { wordlist } from '@scure/bip39/wordlists/english';
 import { keccak256 } from 'ethereum-cryptography/keccak';
-
-import { stripHexPrefix } from './transform.lib.js';
+import { decode } from 'bech32-buffer';
+import { stripHexPrefix } from './transform.util.js';
 
 /**
  * @description Get Mnemonic and priv/pub keys from privateKeyBytes and BIP44 HD path
@@ -93,4 +93,13 @@ export const deriveHDKeyFromMnemonic = (
     privateKey: derivedHdkey.privateKey,
     publicKey: derivedHdkey.publicKey,
   };
+};
+/**
+ * get Bech32 address from cosmos address
+ * @param address cosmos address
+ * @returns Bech32 address
+ */
+export const getBech32Address = (address: string): string => {
+  const r = decode(address);
+  return r.data.toString();
 };

@@ -3,7 +3,7 @@ import { Uint53 } from '@cosmjs/math';
 import { TimeoutError } from '@cosmjs/stargate';
 import { Method, toRfc3339WithNanoseconds, } from '@cosmjs/tendermint-rpc';
 import { sleep } from '@cosmjs/utils';
-import { BroadcastErrorObject } from '../../libs/errors.lib.js';
+import { BroadcastErrorObject } from '../../common/errors.js';
 export class WarpedTendermintClient {
     baseClient;
     broadcastOptions;

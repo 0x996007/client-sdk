@@ -1,4 +1,3 @@
-import { IndexerConfig } from '../types.js';
 import AccountReader from './modules/account.reader.js';
 import MarketsReader from './modules/markets.reader.js';
 import ChainReader from './modules/chain.reader.js';
@@ -7,13 +6,12 @@ import VaultReader from './modules/vault.reader.js';
  * @description Client for Indexer
  */
 export declare class ReaderClient {
-    readonly config: IndexerConfig;
     readonly apiTimeout: number;
     readonly _markets: MarketsReader;
     readonly _account: AccountReader;
     readonly _utility: ChainReader;
     readonly _vault: VaultReader;
-    constructor(config: IndexerConfig, apiTimeout?: number);
+    constructor(network: string, apiTimeout?: number);
     /**
      * @description Get the public module, used for interacting with public endpoints.
      *

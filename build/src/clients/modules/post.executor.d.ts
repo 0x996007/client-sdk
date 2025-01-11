@@ -2,34 +2,32 @@ import { EncodeObject } from '@cosmjs/proto-signing';
 import { Account, GasPrice, IndexedTx, StdFee } from '@cosmjs/stargate';
 import { BroadcastTxAsyncResponse, BroadcastTxSyncResponse } from '@cosmjs/tendermint-rpc/build/tendermint37';
 import Long from 'long';
-import { SelectedGasDenom, OrderFlags, BroadcastMode, IPlaceOrder, ICancelOrder, DenomConfig } from '../../types.js';
+import { SelectedGasDenom, OrderFlags, BroadcastMode, IPlaceOrder, ICancelOrder, ServerNetwork, DenomToken } from '../../common/index.js';
 import { MsgBuilder } from '../base/msg.builder.js';
 import { QueryExecutor } from './query.executor.js';
-import { LocalWallet } from '../base/local.wallet.js';
-import { OrderBatch } from '../../protos/protocol/clob/tx.js';
+import { ClientWallet } from '../base/client.wallet.js';
+import { OrderBatch, Order_ConditionType, Order_Side, Order_TimeInForce } from '../../protos/types.js';
 import { SubaccountInfo } from '../base/sub-account.info.js';
-import { Order_ConditionType, Order_Side, Order_TimeInForce } from '../../protos/protocol/clob/order.js';
 export declare class PostExecutor {
     readonly composer: MsgBuilder;
     private readonly registry;
     private readonly chainId;
+    private readonly network;
     readonly get: QueryExecutor;
-    readonly denoms: DenomConfig;
     readonly defaultClientMemo?: string;
     selectedGasDenom: SelectedGasDenom;
-    readonly defaultGasPrice: GasPrice;
-    readonly defaultDydxGasPrice: GasPrice;
     useTimestampNonce: boolean;
     private accountNumberCache;
-    constructor(get: QueryExecutor, chainId: string, denoms: DenomConfig, defaultClientMemo?: string, useTimestampNonce?: boolean);
+    constructor(query: QueryExecutor, network: ServerNetwork);
+    getGasDenomToken(denom?: SelectedGasDenom): DenomToken | undefined;
     /**
      * @description Retrieves the account number for the given wallet address and populates the accountNumberCache.
      * The account number is required for txOptions when signing a transaction.
      * Pre-populating the cache avoids a round-trip request during the first transaction creation in the session, preventing it from being a performance blocker.
      */
     populateAccountNumberCache(address: string): Promise<void>;
-    setSelectedGasDenom(selectedGasDenom: SelectedGasDenom): void;
-    getGasPrice(): GasPrice;
+    setSelectedGasDenom(denom: SelectedGasDenom): void;
+    getGasPrice(denom?: SelectedGasDenom): GasPrice;
     /**
      * @description Simulate a transaction
      * the calling function is responsible for creating the messages.
@@ -38,7 +36,7 @@ export declare class PostExecutor {
      * at any point.
      * @returns The Fee for broadcasting a transaction.
      */
-    simulate(wallet: LocalWallet, messaging: () => Promise<EncodeObject[]>, gasPrice?: GasPrice, memo?: string, account?: () => Promise<Account>): Promise<StdFee>;
+    simulate(wallet: ClientWallet, messaging: () => Promise<EncodeObject[]>, gasPrice?: GasPrice, memo?: string, account?: () => Promise<Account>): Promise<StdFee>;
     /**
      * @description Sign a transaction
      * the calling function is responsible for creating the messages.
@@ -47,7 +45,7 @@ export declare class PostExecutor {
      * at any point.
      * @returns The Signature.
      */
-    sign(wallet: LocalWallet, messaging: () => Promise<EncodeObject[]>, zeroFee: boolean, gasPrice?: GasPrice, memo?: string, account?: () => Promise<Account>): Promise<Uint8Array>;
+    sign(wallet: ClientWallet, messaging: () => Promise<EncodeObject[]>, zeroFee: boolean, gasPrice?: GasPrice, memo?: string, account?: () => Promise<Account>): Promise<Uint8Array>;
     /**
      * @description Send a transaction
      * the calling function is responsible for creating the messages.
@@ -56,7 +54,7 @@ export declare class PostExecutor {
      * at any point.
      * @returns The Tx Hash.
      */
-    send(wallet: LocalWallet, messaging: () => Promise<EncodeObject[]>, zeroFee: boolean, gasPrice?: GasPrice, memo?: string, broadcastMode?: BroadcastMode, account?: () => Promise<Account>, gasAdjustment?: number): Promise<BroadcastTxAsyncResponse | BroadcastTxSyncResponse | IndexedTx>;
+    send(wallet: ClientWallet, messaging: () => Promise<EncodeObject[]>, zeroFee: boolean, gasPrice?: GasPrice, memo?: string, broadcastMode?: BroadcastMode, account?: () => Promise<Account>, gasAdjustment?: number): Promise<BroadcastTxAsyncResponse | BroadcastTxSyncResponse | IndexedTx>;
     /**
      * @description Calculate the default broadcast mode.
      */

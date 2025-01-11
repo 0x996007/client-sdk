@@ -1,5 +1,4 @@
 import { ErrorEvent, MessageEvent } from 'ws';
-import { IndexerConfig } from '../types.js';
 export declare enum IncomingMessageTypes {
     CONNECTED = "connected",
     SUBSCRIBED = "subscribed",
@@ -24,7 +23,7 @@ export declare class SocketClient {
     private onCloseCallback?;
     private onMessageCallback?;
     private onErrorCallback?;
-    constructor(config: IndexerConfig, onOpenCallback: () => void, onCloseCallback: () => void, onMessageCallback: (event: MessageEvent) => void, onErrorCallback: (event: ErrorEvent) => void);
+    constructor(network: string, onOpenCallback: () => void, onCloseCallback: () => void, onMessageCallback: (event: MessageEvent) => void, onErrorCallback: (event: ErrorEvent) => void);
     connect(): void;
     /**
      * @description Close the websocket connection.

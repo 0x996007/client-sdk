@@ -3,11 +3,11 @@ import * as AuthModule from 'cosmjs-types/cosmos/auth/v1beta1/query.js';
 import * as BankModule from 'cosmjs-types/cosmos/bank/v1beta1/query.js';
 import Long from 'long';
 import protobuf from 'protobufjs';
-import { bigIntToBytes } from '../../libs/transform.lib.js';
-import { PAGE_REQUEST } from '../../types.js';
-import { UnexpectedClientError } from '../../libs/errors.lib.js';
-import { AffiliateModule, BridgeModule, ClobModule, DistributionModule, FeeTierModule, GovV1Module, PerpetualsModule, PricesModule, RateLimitModule, RewardsModule, StakingModule, StatsModule, SubaccountsModule, VaultModule, } from '../../protos/modules.js';
-import { ProposalStatus } from '../../protos/cosmos/gov/v1/gov.js';
+import { bigIntToBytes } from '../../utils/transform.util.js';
+import { PAGE_REQUEST } from '../../common/constants.js';
+import { UnexpectedClientError } from '../../common/errors.js';
+import { AffiliateModule, BridgeModule, ClobModule, DistributionModule, FeeTierModule, GovV1Module, PerpetualsModule, PricesModule, RateLimitModule, RewardsModule, StakingModule, StatsModule, SubaccountsModule, VaultModule, } from '../../protos/queries.js';
+import { ProposalStatus } from '../../protos/types.js';
 // Required for encoding and decoding queries that are of type Long.
 // Must be done once but since the individal modules should be usable without
 // dYdXClient - must be set in each module that encounters encoding/decoding Longs.

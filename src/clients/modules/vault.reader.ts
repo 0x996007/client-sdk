@@ -1,4 +1,4 @@
-import { PnlTickInterval } from '../../types.js';
+import { PnlTickInterval } from '../../common/index.js';
 import ReaderBaseClient from '../base/reader.client.js';
 
 /**

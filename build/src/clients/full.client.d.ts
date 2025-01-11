@@ -1,13 +1,12 @@
 import { EncodeObject } from '@cosmjs/proto-signing';
 import { Account, GasPrice, IndexedTx, StdFee } from '@cosmjs/stargate';
 import { BroadcastTxAsyncResponse, BroadcastTxSyncResponse } from '@cosmjs/tendermint-rpc/build/tendermint37';
-import { GovAddNewMarketParams, OrderFlags, Network, OrderExecution, OrderSide, OrderTimeInForce, OrderType, SelectedGasDenom, BroadcastMode } from '../types.js';
+import { OrderFlags, OrderExecution, OrderSide, OrderTimeInForce, OrderType, SelectedGasDenom, BroadcastMode, ServerNetwork, DenomToken, GovAddNewMarketParams } from '../common/index.js';
 import { ReaderClient } from './reader.client.js';
-import { LocalWallet } from './base/local.wallet.js';
+import { ClientWallet } from './base/client.wallet.js';
 import { SubaccountInfo } from './base/sub-account.info.js';
 import { ExecutorClient } from './executor.client.js';
-import { Order_TimeInForce } from '../protos/protocol/clob/order.js';
-import { OrderBatch } from '../protos/protocol/clob/tx.js';
+import { Order_TimeInForce, OrderBatch } from '../protos/types.js';
 export interface MarketInfo {
     clobPairId: number;
     atomicResolution: number;
@@ -21,16 +20,17 @@ export interface OrderBatchWithMarketId {
     clientIds: number[];
 }
 export declare class FullClient {
-    readonly network: Network;
+    readonly network: ServerNetwork;
     gasDenom: SelectedGasDenom;
     private _readerClient;
     private _executorClient?;
-    static connect(network: Network): Promise<FullClient>;
+    static connect(network: string): Promise<FullClient>;
     private constructor();
     private initialize;
     get readerClient(): ReaderClient;
     get executorClient(): ExecutorClient;
     get selectedGasDenom(): SelectedGasDenom | undefined;
+    getGasDenomToken(denom: SelectedGasDenom): DenomToken | undefined;
     setSelectedGasDenom(gasDenom: SelectedGasDenom): void;
     populateAccountNumberCache(address: string): Promise<void>;
     /**
@@ -41,7 +41,7 @@ export declare class FullClient {
      * at any point.
      * @returns The Signature.
      */
-    sign(wallet: LocalWallet, messaging: () => Promise<EncodeObject[]>, zeroFee: boolean, gasPrice?: GasPrice, memo?: string, account?: () => Promise<Account>): Promise<Uint8Array>;
+    sign(wallet: ClientWallet, messaging: () => Promise<EncodeObject[]>, zeroFee: boolean, gasPrice?: GasPrice, memo?: string, account?: () => Promise<Account>): Promise<Uint8Array>;
     /**
      * @description Send a list of messages with a wallet.
      * the calling function is responsible for creating the messages.
@@ -50,7 +50,7 @@ export declare class FullClient {
      * at any point.
      * @returns The Transaction Hash.
      */
-    send(wallet: LocalWallet, messaging: () => Promise<EncodeObject[]>, zeroFee: boolean, gasPrice?: GasPrice, memo?: string, broadcastMode?: BroadcastMode, account?: () => Promise<Account>): Promise<BroadcastTxAsyncResponse | BroadcastTxSyncResponse | IndexedTx>;
+    send(wallet: ClientWallet, messaging: () => Promise<EncodeObject[]>, zeroFee: boolean, gasPrice?: GasPrice, memo?: string, broadcastMode?: BroadcastMode, account?: () => Promise<Account>): Promise<BroadcastTxAsyncResponse | BroadcastTxSyncResponse | IndexedTx>;
     /**
      * @description Send a signed transaction.
      *
@@ -74,7 +74,7 @@ export declare class FullClient {
      * at any point.
      * @returns The gas estimate.
      */
-    simulate(wallet: LocalWallet, messaging: () => Promise<EncodeObject[]>, gasPrice?: GasPrice, memo?: string, account?: () => Promise<Account>): Promise<StdFee>;
+    simulate(wallet: ClientWallet, messaging: () => Promise<EncodeObject[]>, gasPrice?: GasPrice, memo?: string, account?: () => Promise<Account>): Promise<StdFee>;
     /**
      * @description Calculate the goodTilBlock value for a SHORT_TERM order
      *
@@ -341,7 +341,7 @@ export declare class FullClient {
      * at any point.
      * @returns The message
      */
-    sendTokenMessage(wallet: LocalWallet, amount: string, recipient: string): EncodeObject;
+    sendTokenMessage(wallet: ClientWallet, amount: string, recipient: string): EncodeObject;
     signPlaceOrder(subaccount: SubaccountInfo, marketId: string, type: OrderType, side: OrderSide, price: number, size: number, clientId: number, timeInForce: OrderTimeInForce, goodTilTimeInSeconds: number, execution: OrderExecution, postOnly: boolean, reduceOnly: boolean): Promise<string>;
     signCancelOrder(subaccount: SubaccountInfo, clientId: number, orderFlags: OrderFlags, clobPairId: number, goodTilBlock: number, goodTilBlockTime: number): Promise<string>;
     depositToMegavault(subaccount: SubaccountInfo, amountUsdc: number, broadcastMode?: BroadcastMode): Promise<BroadcastTxAsyncResponse | BroadcastTxSyncResponse | IndexedTx>;
@@ -359,6 +359,6 @@ export declare class FullClient {
      *
      * @returns the transaction hash.
      */
-    submitGovAddNewMarketProposal(wallet: LocalWallet, params: GovAddNewMarketParams, title: string, summary: string, initialDepositAmount: string, memo?: string, metadata?: string, expedited?: boolean): Promise<BroadcastTxAsyncResponse | BroadcastTxSyncResponse | IndexedTx>;
+    submitGovAddNewMarketProposal(wallet: ClientWallet, params: GovAddNewMarketParams, title: string, summary: string, initialDepositAmount: string, memo?: string, metadata?: string, expedited?: boolean): Promise<BroadcastTxAsyncResponse | BroadcastTxSyncResponse | IndexedTx>;
     createMarketPermissionless(subaccount: SubaccountInfo, ticker: string, broadcastMode?: BroadcastMode, gasAdjustment?: number, memo?: string): Promise<BroadcastTxAsyncResponse | BroadcastTxSyncResponse | IndexedTx>;
 }

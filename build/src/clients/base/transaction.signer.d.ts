@@ -1,6 +1,6 @@
 import { EncodeObject } from '@cosmjs/proto-signing';
 import { SigningStargateClient, StdFee } from '@cosmjs/stargate';
-import { TransactionOptions } from '../../types.js';
+import { TransactionOptions } from '../../common/index.js';
 export declare class TransactionSigner {
     readonly address: string;
     readonly stargateSigningClient: SigningStargateClient;

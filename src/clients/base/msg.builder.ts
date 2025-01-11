@@ -1,28 +1,35 @@
 import { EncodeObject, Registry } from '@cosmjs/proto-signing';
-import { MsgWithdrawDelegatorReward } from '../../protos/cosmos/distribution/v1beta1/tx.js';
-import { MsgSubmitProposal } from '../../protos/cosmos/gov/v1/tx.js';
 import {
+  MsgCreateMarketPermissionless,
+  MsgCreateTransfer,
+  MsgDepositToSubaccount,
+  MsgWithdrawFromSubaccount,
+  Transfer,
+  SubaccountId,
+  Order,
+  Order_ConditionType,
+  Order_Side,
+  Order_TimeInForce,
+  OrderId,
+  MsgWithdrawDelegatorReward,
+  MsgSubmitProposal,
   MsgDelegate,
   MsgUndelegate,
-} from '../../protos/cosmos/staking/v1beta1/tx.js';
-import { MsgRegisterAffiliate } from '../../protos/protocol/affiliates/tx.js';
-import { ClobPair_Status } from '../../protos/protocol/clob/clob_pair.js';
-import {
+  ClobPair_Status,
+  MsgRegisterAffiliate,
   MsgBatchCancel,
   MsgCancelOrder,
   MsgCreateClobPair,
   MsgPlaceOrder,
   MsgUpdateClobPair,
   OrderBatch,
-} from '../../protos/protocol/clob/tx.js';
-import { MsgDelayMessage } from '../../protos/protocol/delaymsg/tx.js';
-import { PerpetualMarketType } from '../../protos/protocol/perpetuals/perpetual.js';
-import { MsgCreatePerpetual } from '../../protos/protocol/perpetuals/tx.js';
-import { MsgCreateOracleMarket } from '../../protos/protocol/prices/tx.js';
-import {
   MsgDepositToMegavault,
   MsgWithdrawFromMegavault,
-} from '../../protos/protocol/vault/tx.js';
+  MsgDelayMessage,
+  PerpetualMarketType,
+  MsgCreatePerpetual,
+  MsgCreateOracleMarket,
+} from '../../protos/types.js';
 import { MsgSend } from 'cosmjs-types/cosmos/bank/v1beta1/tx.js';
 import { Coin } from 'cosmjs-types/cosmos/base/v1beta1/coin.js';
 import { Any } from 'cosmjs-types/google/protobuf/any.js';
@@ -30,8 +37,7 @@ import Long from 'long';
 import protobuf from 'protobufjs';
 
 import {
-  GOV_MODULE_ADDRESS,
-  DELAYMSG_MODULE_ADDRESS,
+  AUTHORITY_ADDRESSES,
   TYPE_URL_MSG_SEND,
   TYPE_URL_MSG_SUBMIT_PROPOSAL,
   TYPE_URL_MSG_PLACE_ORDER,
@@ -52,23 +58,7 @@ import {
   TYPE_URL_MSG_DEPOSIT_TO_MEGAVAULT,
   TYPE_URL_MSG_WITHDRAW_FROM_MEGAVAULT,
   TYPE_URL_MSG_CREATE_MARKET_PERMISSIONLESS,
-  DenomConfig,
-} from '../../types.js';
-import {
-  Order,
-  Order_ConditionType,
-  Order_Side,
-  Order_TimeInForce,
-  OrderId,
-} from '../../protos/protocol/clob/order.js';
-import { SubaccountId } from '../../protos/protocol/subaccounts/subaccount.js';
-import {
-  MsgDepositToSubaccount,
-  MsgWithdrawFromSubaccount,
-  Transfer,
-} from '../../protos/protocol/sending/transfer.js';
-import { MsgCreateTransfer } from '../../protos/protocol/sending/tx.js';
-import { MsgCreateMarketPermissionless } from '../../protos/protocol/listing/tx.js';
+} from '../../common/index.js';
 
 protobuf.util.Long = Long;
 protobuf.configure();
@@ -202,7 +192,7 @@ export class MsgBuilder {
   ): EncodeObject {
     const msg: MsgCreateClobPair = {
       // uses x/gov module account since creating the clob pair is a governance action.
-      authority: GOV_MODULE_ADDRESS,
+      authority: AUTHORITY_ADDRESSES.gov,
       clobPair: {
         id: clobId,
         perpetualClobMetadata: {
@@ -230,7 +220,7 @@ export class MsgBuilder {
   ): EncodeObject {
     const msg: MsgUpdateClobPair = {
       // uses x/delaymsg module account since updating the clob pair is a delayedmsg action.
-      authority: DELAYMSG_MODULE_ADDRESS,
+      authority: AUTHORITY_ADDRESSES.delayMsg,
       clobPair: {
         id: clobId,
         perpetualClobMetadata: {
@@ -368,7 +358,7 @@ export class MsgBuilder {
   ): EncodeObject {
     const msg: MsgCreateOracleMarket = {
       // uses x/gov module account since creating the oracle market is a governance action.
-      authority: GOV_MODULE_ADDRESS,
+      authority: AUTHORITY_ADDRESSES.gov,
       params: {
         id: marketId,
         pair,
@@ -396,7 +386,7 @@ export class MsgBuilder {
   ): EncodeObject {
     const msg: MsgCreatePerpetual = {
       // uses x/gov module account since creating the perpetual is a governance action.
-      authority: GOV_MODULE_ADDRESS,
+      authority: AUTHORITY_ADDRESSES.gov,
       params: {
         id: perpetualId,
         marketId,
@@ -421,7 +411,7 @@ export class MsgBuilder {
   ): EncodeObject {
     const msg: MsgDelayMessage = {
       // all msgs sent to x/delay must be from x/gov module account.
-      authority: GOV_MODULE_ADDRESS,
+      authority: AUTHORITY_ADDRESSES.gov,
       msg: embeddedMsg,
       delayBlocks,
     };
@@ -436,7 +426,7 @@ export class MsgBuilder {
   public composeMsgSubmitProposal(
     title: string,
     initialDepositAmount: string,
-    initialDepositDenomConfig: DenomConfig,
+    initialDepositDenomConfig: string,
     summary: string,
     messages: EncodeObject[],
     proposer: string,
@@ -446,7 +436,7 @@ export class MsgBuilder {
     const initialDeposit: Coin[] = [
       {
         amount: initialDepositAmount,
-        denom: initialDepositDenomConfig.CHAINTOKEN_DENOM,
+        denom: initialDepositDenomConfig,
       },
     ];
 

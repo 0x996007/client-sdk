@@ -1,5 +1,5 @@
 import ReaderBaseClient from '../base/reader.client.js';
-import type { ComplianceResponse, HeightResponse, TimeResponse } from '../../types.js';
+import type { ComplianceResponse, HeightResponse, TimeResponse } from '../../common/index.js';
 export default class ChainReaderClient extends ReaderBaseClient {
     /**
      * @description Get the current time of the Indexer

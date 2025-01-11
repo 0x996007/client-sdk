@@ -4,8 +4,8 @@ import { TxRaw } from 'cosmjs-types/cosmos/tx/v1beta1/tx.js';
 import Long from 'long';
 import protobuf from 'protobufjs';
 
-import { UserError } from '../../libs/errors.lib.js';
-import { TransactionOptions } from '../../types.js';
+import { UserError } from '../../common/errors.js';
+import { TransactionOptions } from '../../common/index.js';
 
 // Required for encoding and decoding queries that are of type Long.
 // Must be done once but since the individal modules should be usable

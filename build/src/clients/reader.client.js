@@ -1,4 +1,4 @@
-import { DEFAULT_API_TIMEOUT } from '../types.js';
+import { DEFAULT_API_TIMEOUT, getServerNetwork } from '../common/constants.js';
 import AccountReader from './modules/account.reader.js';
 import MarketsReader from './modules/markets.reader.js';
 import ChainReader from './modules/chain.reader.js';
@@ -7,19 +7,18 @@ import VaultReader from './modules/vault.reader.js';
  * @description Client for Indexer
  */
 export class ReaderClient {
-    config;
     apiTimeout;
     _markets;
     _account;
     _utility;
     _vault;
-    constructor(config, apiTimeout) {
-        this.config = config;
+    constructor(network, apiTimeout) {
+        const config = getServerNetwork(network);
         this.apiTimeout = apiTimeout ?? DEFAULT_API_TIMEOUT;
-        this._markets = new MarketsReader(config.restEndpoint);
-        this._account = new AccountReader(config.restEndpoint);
-        this._utility = new ChainReader(config.restEndpoint);
-        this._vault = new VaultReader(config.restEndpoint);
+        this._markets = new MarketsReader(config.reader, this.apiTimeout);
+        this._account = new AccountReader(config.reader, this.apiTimeout);
+        this._utility = new ChainReader(config.reader, this.apiTimeout);
+        this._vault = new VaultReader(config.reader, this.apiTimeout);
     }
     /**
      * @description Get the public module, used for interacting with public endpoints.

@@ -1,4 +1,4 @@
-import { WrappedError } from '../libs/errors.lib.js';
+import { WrappedError } from '../common/errors.js';
 export declare enum RequestMethod {
     POST = "POST",
     PUT = "PUT",
@@ -14,19 +14,8 @@ interface AxiosErrorResponse {
     statusText: string;
     data: unknown;
 }
-/**
- * @description An error thrown by axios.
- *
- * Depending on your use case, if logging errors, you may want to catch axios errors and sanitize
- * them to remove the request and response objects, or sensitive fields. For example:
- *
- *   this.originalError = _.omit(originalError.toJSON(), 'config')
- */
 export declare class AxiosError extends WrappedError {
 }
-/**
- * @description Axios error with response error fields.
- */
 export declare class AxiosServerError extends AxiosError {
     readonly status: number;
     readonly statusText: string;

@@ -1,5 +1,6 @@
 /* eslint-disable @typescript-eslint/no-empty-object-type */
 import Long from 'long';
+import { getHosts } from './common/constants.js';
 // OrderFlags, just a number in proto, defined as enum for convenience
 export var OrderFlags;
 (function (OrderFlags) {
@@ -225,10 +226,8 @@ export class ValidatorConfig {
     broadcastOptions;
     defaultClientMemo;
     useTimestampNonce;
-    constructor(restEndpoint, chainId, denoms, broadcastOptions, defaultClientMemo, useTimestampNonce) {
-        this.restEndpoint = restEndpoint?.endsWith('/')
-            ? restEndpoint.slice(0, -1)
-            : restEndpoint;
+    constructor(network, chainId, denoms, broadcastOptions, defaultClientMemo, useTimestampNonce) {
+        this.restEndpoint = getHosts(network).executor;
         this.chainId = chainId;
         this.denoms = denoms;
         this.broadcastOptions = broadcastOptions;

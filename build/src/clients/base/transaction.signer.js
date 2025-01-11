@@ -1,7 +1,7 @@
 import { TxRaw } from 'cosmjs-types/cosmos/tx/v1beta1/tx.js';
 import Long from 'long';
 import protobuf from 'protobufjs';
-import { UserError } from '../../libs/errors.lib.js';
+import { UserError } from '../../common/errors.js';
 // Required for encoding and decoding queries that are of type Long.
 // Must be done once but since the individal modules should be usable
 // - must be set in each module that encounters encoding/decoding Longs.

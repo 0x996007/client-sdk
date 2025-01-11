@@ -6,12 +6,34 @@ import {
   OrderSide,
   OrderTimeInForce,
   OrderType,
-} from '../types.js';
+  PartialTransactionOptions,
+  TransactionOptions,
+  DEFAULT_SEQUENCE,
+} from '../common/index.js';
 import {
   Order_ConditionType,
   Order_Side,
   Order_TimeInForce,
-} from '../protos/protocol/clob/order.js';
+} from '../protos/types.js';
+
+/**
+ * @description Either return undefined or insert default sequence value into
+ * `partialTransactionOptions` if it does not exist.
+ *
+ * @returns undefined or full TransactionOptions.
+ */
+export function convertPartialTransactionOptionsToFull(
+  partialTransactionOptions?: PartialTransactionOptions,
+): TransactionOptions | undefined {
+  if (partialTransactionOptions === undefined) {
+    return undefined;
+  }
+
+  return {
+    sequence: DEFAULT_SEQUENCE,
+    ...partialTransactionOptions,
+  };
+}
 
 export function round(input: number, base: number): number {
   return BigNumber(input)

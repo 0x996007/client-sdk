@@ -24,25 +24,25 @@ import {
   TransactionOptions,
   IPlaceOrder,
   ICancelOrder,
-  DenomConfig,
-} from '../../types.js';
-import { UnexpectedClientError } from '../../libs/errors.lib.js';
-import { generateRegistry } from '../../libs/registry.lib.js';
+  ServerNetwork,
+  DefaultDenomGasPrice,
+  DenomToken,
+} from '../../common/index.js';
+import { UnexpectedClientError } from '../../common/errors.js';
+import { generateRegistry } from '../../utils/registry.util.js';
 import { MsgBuilder } from '../base/msg.builder.js';
 import { QueryExecutor } from './query.executor.js';
-import { LocalWallet } from '../base/local.wallet.js';
+import { ClientWallet } from '../base/client.wallet.js';
 import {
   MsgCancelOrder,
   MsgPlaceOrder,
   OrderBatch,
-} from '../../protos/protocol/clob/tx.js';
-import { Any } from '../../protos/google/protobuf/any.js';
-import { SubaccountInfo } from '../base/sub-account.info.js';
-import {
+  Any,
   Order_ConditionType,
   Order_Side,
   Order_TimeInForce,
-} from '../../protos/protocol/clob/order.js';
+} from '../../protos/types.js';
+import { SubaccountInfo } from '../base/sub-account.info.js';
 
 // Required for encoding and decoding queries that are of type Long.
 // Must be done once but since the individal modules should be usable
@@ -55,41 +55,27 @@ export class PostExecutor {
   public readonly composer: MsgBuilder;
   private readonly registry: Registry;
   private readonly chainId: string;
+  private readonly network: ServerNetwork;
   public readonly get: QueryExecutor;
-  public readonly denoms: DenomConfig;
   public readonly defaultClientMemo?: string;
-
-  public selectedGasDenom: SelectedGasDenom = SelectedGasDenom.USDC;
-  public readonly defaultGasPrice: GasPrice;
-  public readonly defaultDydxGasPrice: GasPrice;
-
+  public selectedGasDenom: SelectedGasDenom = SelectedGasDenom.NATIVE;
   public useTimestampNonce: boolean = false;
   private accountNumberCache: Map<string, Account> = new Map();
 
-  constructor(
-    get: QueryExecutor,
-    chainId: string,
-    denoms: DenomConfig,
-    defaultClientMemo?: string,
-    useTimestampNonce?: boolean,
-  ) {
-    this.get = get;
-    this.chainId = chainId;
+  constructor(query: QueryExecutor, network: ServerNetwork) {
+    this.network = network;
+    this.get = query;
+    this.chainId = network.id;
     this.registry = generateRegistry();
     this.composer = new MsgBuilder();
-    this.denoms = denoms;
-    this.defaultClientMemo = defaultClientMemo;
-    this.defaultGasPrice = GasPrice.fromString(
-      `0.025${denoms.USDC_GAS_DENOM !== undefined ? denoms.USDC_GAS_DENOM : denoms.USDC_DENOM}`,
-    );
-    this.defaultDydxGasPrice = GasPrice.fromString(
-      `25000000000${
-        denoms.CHAINTOKEN_GAS_DENOM !== undefined
-          ? denoms.CHAINTOKEN_GAS_DENOM
-          : denoms.CHAINTOKEN_DENOM
-      }`,
-    );
-    if (useTimestampNonce === true) this.useTimestampNonce = useTimestampNonce;
+    this.defaultClientMemo = network.defaultClientMemo;
+    this.useTimestampNonce = network.useTimestampNonce || false;
+  }
+
+  getGasDenomToken(
+    denom: SelectedGasDenom = this.selectedGasDenom,
+  ): DenomToken | undefined {
+    return this.network.gasDenomConfig[denom];
   }
 
   /**
@@ -104,14 +90,13 @@ export class PostExecutor {
     this.accountNumberCache.set(address, account);
   }
 
-  setSelectedGasDenom(selectedGasDenom: SelectedGasDenom): void {
-    this.selectedGasDenom = selectedGasDenom;
+  setSelectedGasDenom(denom: SelectedGasDenom): void {
+    this.selectedGasDenom = denom;
   }
 
-  getGasPrice(): GasPrice {
-    return this.selectedGasDenom === SelectedGasDenom.USDC
-      ? this.defaultGasPrice
-      : this.defaultDydxGasPrice;
+  getGasPrice(denom: SelectedGasDenom = this.selectedGasDenom): GasPrice {
+    const d = this.getGasDenomToken(denom);
+    return GasPrice.fromString(`${DefaultDenomGasPrice[d.denom]}${d.symbol}`);
   }
 
   /**
@@ -123,7 +108,7 @@ export class PostExecutor {
    * @returns The Fee for broadcasting a transaction.
    */
   async simulate(
-    wallet: LocalWallet,
+    wallet: ClientWallet,
     messaging: () => Promise<EncodeObject[]>,
     gasPrice: GasPrice = this.getGasPrice(),
     memo?: string,
@@ -163,7 +148,7 @@ export class PostExecutor {
    * @returns The Signature.
    */
   async sign(
-    wallet: LocalWallet,
+    wallet: ClientWallet,
     messaging: () => Promise<EncodeObject[]>,
     zeroFee: boolean,
     gasPrice: GasPrice = this.getGasPrice(),
@@ -195,7 +180,7 @@ export class PostExecutor {
    * @returns The Tx Hash.
    */
   async send(
-    wallet: LocalWallet,
+    wallet: ClientWallet,
     messaging: () => Promise<EncodeObject[]>,
     zeroFee: boolean,
     gasPrice: GasPrice = this.getGasPrice(),
@@ -258,7 +243,7 @@ export class PostExecutor {
    * @returns The Tx Response.
    */
   private async signTransaction(
-    wallet: LocalWallet,
+    wallet: ClientWallet,
     messages: EncodeObject[],
     account: Account,
     zeroFee: boolean,
@@ -319,7 +304,7 @@ export class PostExecutor {
    * @returns The Tx Response.
    */
   private async signAndSendTransaction(
-    wallet: LocalWallet,
+    wallet: ClientWallet,
     account: Account,
     messages: EncodeObject[],
     zeroFee: boolean,
@@ -397,10 +382,10 @@ export class PostExecutor {
     // represented in 'uusdc', and the output of `calculateFee` is in '', which is replaced
     // below by USDC_DENOM string.
     const amount: Coin[] = fee.amount.map((coin: Coin) => {
-      if (coin.denom === 'uusdc') {
+      if (coin.denom === SelectedGasDenom.USDC) {
         return {
           amount: coin.amount,
-          denom: this.denoms.USDC_DENOM,
+          denom: SelectedGasDenom.USDC,
         };
       }
       return coin;
@@ -780,9 +765,7 @@ export class PostExecutor {
       subaccount.wallet,
       () => Promise.resolve([msg]),
       zeroFee,
-      coinDenom === this.denoms.CHAINTOKEN_DENOM
-        ? this.defaultDydxGasPrice
-        : this.defaultGasPrice,
+      this.getGasPrice(coinDenom as SelectedGasDenom),
       undefined,
       broadcastMode,
     );
@@ -794,10 +777,7 @@ export class PostExecutor {
     coinDenom: string,
     quantums: string,
   ): Promise<EncodeObject> {
-    if (
-      coinDenom !== this.denoms.CHAINTOKEN_DENOM &&
-      coinDenom !== this.denoms.USDC_DENOM
-    ) {
+    if (!Object.keys(this.network.gasDenomConfig).includes(coinDenom)) {
       throw new Error('Unsupported coinDenom');
     }
 
@@ -820,14 +800,14 @@ export class PostExecutor {
     broadcastMode?: BroadcastMode,
   ): Promise<BroadcastTxAsyncResponse | BroadcastTxSyncResponse | IndexedTx> {
     const msg = this.composer.composeMsgDelegate(delegator, validator, {
-      denom: this.denoms.CHAINTOKEN_DENOM,
+      denom: SelectedGasDenom.NATIVE,
       amount,
     });
     return this.send(
       subaccount.wallet,
       () => Promise.resolve([msg]),
       false,
-      this.defaultDydxGasPrice,
+      this.getGasPrice(SelectedGasDenom.NATIVE),
       undefined,
       broadcastMode,
     );
@@ -839,7 +819,7 @@ export class PostExecutor {
     amount: string,
   ): EncodeObject {
     return this.composer.composeMsgDelegate(delegator, validator, {
-      denom: this.denoms.CHAINTOKEN_DENOM,
+      denom: SelectedGasDenom.NATIVE,
       amount,
     });
   }
@@ -852,14 +832,14 @@ export class PostExecutor {
     broadcastMode?: BroadcastMode,
   ): Promise<BroadcastTxAsyncResponse | BroadcastTxSyncResponse | IndexedTx> {
     const msg = this.composer.composeMsgUndelegate(delegator, validator, {
-      denom: this.denoms.CHAINTOKEN_DENOM,
+      denom: SelectedGasDenom.NATIVE,
       amount,
     });
     return this.send(
       subaccount.wallet,
       () => Promise.resolve([msg]),
       false,
-      this.defaultDydxGasPrice,
+      this.getGasPrice(SelectedGasDenom.NATIVE),
       undefined,
       broadcastMode,
     );
@@ -871,7 +851,7 @@ export class PostExecutor {
     amount: string,
   ): EncodeObject {
     return this.composer.composeMsgUndelegate(delegator, validator, {
-      denom: this.denoms.CHAINTOKEN_DENOM,
+      denom: SelectedGasDenom.NATIVE,
       amount,
     });
   }
@@ -890,7 +870,7 @@ export class PostExecutor {
       subaccount.wallet,
       () => Promise.resolve([msg]),
       false,
-      this.defaultGasPrice,
+      this.getGasPrice(SelectedGasDenom.NATIVE),
       undefined,
       broadcastMode,
     );

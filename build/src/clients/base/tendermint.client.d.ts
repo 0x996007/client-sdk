@@ -1,7 +1,7 @@
 import { Block, IndexedTx } from '@cosmjs/stargate';
 import { Tendermint37Client } from '@cosmjs/tendermint-rpc';
 import { BroadcastTxAsyncResponse, BroadcastTxSyncResponse } from '@cosmjs/tendermint-rpc/build/tendermint37';
-import { BroadcastMode, BroadcastOptions } from '../../types.js';
+import { BroadcastMode, BroadcastOptions } from '../../common/index.js';
 export declare class WarpedTendermintClient {
     readonly baseClient: Tendermint37Client;
     broadcastOptions: BroadcastOptions;
