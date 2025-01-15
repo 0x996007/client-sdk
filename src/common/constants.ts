@@ -39,7 +39,7 @@ export const DefaultDenomGasPrice: Record<SelectedGasDenom, string> = {
 export const supportedChains = [421614];
 export const supportedHosts = [testnet];
 
-const depositTokens: DepositToken[] = [
+export const supportedDepositTokens: DepositToken[] = [
   {
     id: 0,
     chainId: 421614,
@@ -56,7 +56,7 @@ export const getServerNetwork = (network: string): ServerNetwork => {
 };
 
 export const getDepositToken = (chainId: number): DepositToken => {
-  return find(depositTokens, { chainId });
+  return find(supportedDepositTokens, { chainId });
 };
 
 export const DEFAULT_API_TIMEOUT: number = 3_000;
